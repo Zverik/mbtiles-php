@@ -1,0 +1,11 @@
+Options -Indexes
+Options +FollowSymLinks
+Options -MultiViews
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^([\w\d_-]+)/(\d+)/(\d+)/(\d+)\.(\w+)$ tile.php?tileset=$1&z=$2&x=$3&y=$4&ext=$5 [QSA,L]
+RewriteRule ^1.0.0/([\w\d_-]+)/(\d+)/(\d+)/(\d+)\.(\w+)$ tile.php?tileset=$1-tms&z=$2&x=$3&y=$4&ext=$5 [QSA,L]
+RewriteRule ^info$ tile.php [QSA,L]
+RewriteRule ^root.xml$ tile.php?tmsinfo=root [QSA,L]
+RewriteRule ^1.0.0/?$ tile.php?tmsinfo=service [QSA,L]
+RewriteRule ^1.0.0/([\w\d_-]+)/?$ tile.php?tmsinfo=resource&tmslayer=$1 [QSA,L]
