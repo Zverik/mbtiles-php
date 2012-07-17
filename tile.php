@@ -1,4 +1,5 @@
 <?
+header('Access-Control-Allow-Origin: *');
 if( isset($_GET['tileset']) && preg_match('/^[\w\d_-]+$/', $_GET['tileset']) ) {
 	$tileset = $_GET['tileset'];
 	$flip = true;
