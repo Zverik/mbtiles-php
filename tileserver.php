@@ -201,7 +201,6 @@ class MapTileController extends BaseClass {
 	}
 	
 	protected function imageTile() {
-		// handle the TMS shit	
 		if ($this->is_tms) {
 			$this->tileset = substr($this->tileset, 0, strlen($this->tileset) - 4);
 		}
@@ -539,10 +538,8 @@ class Router extends BaseClass {
     if (empty($this->action)) $this->action = ROUTER_DEFAULT_ACTION;
     if (empty($this->id)) $this->id = null;
  
- 	// determine controller name
+    // determine controller name
     $this->controller_name = implode(array_map('ucfirst', explode('_', $this->controller."_controller")));
-//    foreach($w as $k => $v) $w[$k] = ucfirst($v);
-    //$this->controller_name = implode('', $w);
   }
  
   public function match_routes() {
