@@ -33,15 +33,18 @@ $r->map("1.0.0/:layer",
 
 $r->map("1.0.0/:layer/:z/:x/:y.:ext", 
 		array("controller"=>"maptile", "action"=>"serveTmsTile"), 
-		array("layer"=>$_identifier, "x"=>$_number, "y"=>$_number, "z"=>$_number, "ext"=>"(png|jpg|jpeg|json)"));
+		array("layer"=>$_identifier, "x"=>$_number, "y"=>$_number, "z"=>$_number, 
+		      "ext"=>"(png|jpg|jpeg|json)"));
 
 $r->map(":layer/:z/:x/:y.:ext",
 		array("controller"=>"maptile", "action"=>"serveTile"), 
-		array("layer"=>$_identifier, "x"=>$_number, "y"=>$_number, "z"=>$_number, "ext"=>"(png|jpg|jpeg|json)"));
+		array("layer"=>$_identifier, "x"=>$_number, "y"=>$_number, "z"=>$_number, 
+		      "ext"=>"(png|jpg|jpeg|json)"));
 
 $r->map(":layer/:z/:x/:y.:ext\?:argument=:callback",
 		array("controller"=>"maptile", "action"=>"serveTile"), 
-		array("layer"=>$_identifier, "x"=>$_number, "y"=>$_number, "z"=>$_number, "ext"=>"(json|jsonp)", "argument"=>$_identifier, "callback"=>$_identifier));
+		array("layer"=>$_identifier, "x"=>$_number, "y"=>$_number, "z"=>$_number, 
+		      "ext"=>"(json|jsonp)", "argument"=>$_identifier, "callback"=>$_identifier));
 
 $r->map(":layer.tilejson", 
 		array("controller"=>"maptile", "action"=>"tilejson"), array("layer"=>$_identifier));
@@ -105,7 +108,7 @@ class ServerInfoController extends BaseClass {
 
 		$x = new TileMapServiceController();
 		echo "This is the " . $x->server_name . " version " . $x->server_version;
-		echo "<br /><br />Try these! (non-exhaustive list, see source for details):";
+		echo "<br /><br />Try these!";
 		echo "<ul>";
 		foreach ($r->routes as $route) {
 			if (strlen($route->url) > 0 && strpos($route->url, ":layer") === false) {
@@ -126,8 +129,9 @@ class ServerInfoController extends BaseClass {
 				echo "<li><a href='$u'>$u</a></li>";
 			}
 		}
-
 		echo "</ul>";
+
+		echo "<br/><br/>PS: non-exhaustive list, see source for details";
 	}
 
 }
@@ -188,6 +192,8 @@ class MapTileController extends BaseClass {
 
 		// disable ZLIB ouput compression
 		ini_set('zlib.output_compression', 'Off');
+
+		// serve JSON file
 		header('Content-Type: application/json');
 		header('Content-Length: ' . strlen($json));
 		header('Cache-Control: no-cache, no-store, max-age=0, must-revalidate');
@@ -200,6 +206,8 @@ class MapTileController extends BaseClass {
 
 		// disable ZLIB ouput compression
 		ini_set('zlib.output_compression', 'Off');
+
+		// serve JSON file
 		header('Content-Type: application/json');
 		header('Content-Length: ' . strlen($json));
 		header('Cache-Control: no-cache, no-store, max-age=0, must-revalidate');
@@ -208,7 +216,6 @@ class MapTileController extends BaseClass {
 	}
 
 	protected function imageTile() {
-		// handle the TMS shit
 		if ($this->is_tms) {
 			$this->tileset = substr($this->tileset, 0, strlen($this->tileset) - 4);
 		}
@@ -220,6 +227,7 @@ class MapTileController extends BaseClass {
 			$data = $result->fetchColumn();
 
 			if (!isset($data) || $data === FALSE) {
+
 				// did not find a tile - return an empty (transparent) tile
 				$png = imagecreatetruecolor(256, 256);
 				imagesavealpha($png, true);
@@ -231,7 +239,7 @@ class MapTileController extends BaseClass {
 			} else {
 
 				// Hooray, found a tile!
-				// - now figure out which format (jpeg or png) it is in
+				// - figure out which format (jpeg or png) it is in
 				$result = $this->db->query('select value from metadata where name="format"');
 				$resultdata = $result->fetchColumn();
 				$format = isset($resultdata) && $resultdata !== FALSE ? $resultdata : 'png';
@@ -239,7 +247,7 @@ class MapTileController extends BaseClass {
 					$format = 'jpeg';
 				}
 
-				// now, finally, serve the tile
+				// - serve the tile
 				header('Content-type: image/' . $format);
 				print $data;
 
@@ -286,6 +294,7 @@ class MapTileController extends BaseClass {
 		try {
 			$tilejson = array();
 			$tilejson['tilejson'] = "2.0.0";
+			$tilejson['scheme'] = "xyz";
 
 			$result = $this->db->query('select name, value from metadata');
 			while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
@@ -300,10 +309,12 @@ class MapTileController extends BaseClass {
 
 			// find out the absolute path to this script
 			$server_url = "http://" . $_SERVER["HTTP_HOST"] . dirname($_SERVER["REQUEST_URI"]);
-
-			$tilejson['scheme'] = "xyz";
-			$tilejson['tiles'] = array($server_url . "/" . urlencode($layer) . "/{z}/{x}/{y}.png");
-			$tilejson['grid'] = array($server_url . "/" . urlencode($layer) . "/{z}/{x}/{y}.json");
+			$tilejson['tiles'] = array(
+				$server_url . "/" . urlencode($layer) . "/{z}/{x}/{y}.png"
+			);
+			$tilejson['grid'] = array(
+				$server_url . "/" . urlencode($layer) . "/{z}/{x}/{y}.json"
+			);
 
 			if ($callback !== null) {
 				$json = "$callback(" . json_encode($tilejson) . ")";
@@ -473,7 +484,7 @@ EOF;
  * 2. Will now call the indicated controller & action. Named arguments are
  *    converted to similarly method arguments, i.e. if you specify :id in the
  *    URL mapping, the value of that parameter will be provided to the method's
- * 	  '$id' parameter, if present.
+ *    '$id' parameter, if present.
  * 3. Will now allow URL mappings that contain a '?' - useful for mapping JSONP urls
  * 4. Should now correctly deal with spaces (%20) and other stuff in the URL
  *
@@ -508,9 +519,8 @@ class Router extends BaseClass {
 
 		// let's see if we can return a path that is expressed *relative* to the script
 		// (i.e. if this script is in '/sites/something/router.php', and we are
-		// requesting
-		//  /sites/something/here/is/my/path.png, then this function will return
-		// 'here/is/my/path.png')
+		// requesting /sites/something/here/is/my/path.png, then this function will 
+		// return 'here/is/my/path.png')
 		if (strpos($here, $document_root) !== false) {
 			$relative_path = "/" . str_replace($document_root, "", $here);
 			return urldecode(str_replace($relative_path, "", $_SERVER["REQUEST_URI"]));
@@ -550,8 +560,6 @@ class Router extends BaseClass {
 
 		// determine controller name
 		$this->controller_name = implode(array_map('ucfirst', explode('_', $this->controller . "_controller")));
-		//    foreach($w as $k => $v) $w[$k] = ucfirst($v);
-		//$this->controller_name = implode('', $w);
 	}
 
 	public function match_routes() {
@@ -663,6 +671,5 @@ class Route {
 			return '([a-zA-Z0-9_\+\-%]+)';
 		}
 	}
-
 }
 ?>
