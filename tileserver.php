@@ -2,12 +2,12 @@
 /**
  * A PHP TileMap Server
  *
- * Serves image tiles, UTFgrid tiles and TileJson definitions from MBTiles files
- * (as used by TileMill).
- * Implements TileMapServices (@link http://wiki.osgeo.org/wiki/Tile_Map_Service_Specification).
+ * Serves image tiles, UTFgrid tiles and TileJson definitions 
+ * from MBTiles files (as used by TileMill). (Party) implements
+ * the Tile Map Services Specification.
  *
- * Originally based on https://github.com/Zverik/mbtiles-php but refactored and
- * extended.
+ * Originally based on https://github.com/Zverik/mbtiles-php, 
+ * but refactored and extended.
  *
  * @author E. Akerboom (github@infostreams.net)
  * @version 1.0
