@@ -120,11 +120,7 @@ class ServerInfoController extends BaseClass {
 		$layers = glob("*.mbtiles");
 		foreach ($layers as $l) {
 			$l = str_replace(".mbtiles", "", $l);
-			$urls = array(
-				"$l/2/1/1.png",
-				"$l.tilejson",
-				"$l/2/1/1.json"
-			);
+			$urls = array("$l/2/1/1.png", "$l.tilejson", "$l/2/1/1.json");
 			foreach ($urls as $u) {
 				echo "<li><a href='$u'>$u</a></li>";
 			}
@@ -536,27 +532,28 @@ class Router extends BaseClass {
 	}
 
 	public function default_routes() {
-		$this->map('/:controller');
-		$this->map('/:controller/:action');
-		$this->map('/:controller/:action/:id');
+		$this->map(':controller');
+		$this->map(':controller/:action');
+		$this->map(':controller/:action/:id');
 	}
 
 	private function set_route($route) {
 		$this->route_found = true;
 		$params = $route->params;
-		$this->controller = $params['controller'];
-		unset($params['controller']);
-		$this->action = $params['action'];
-		unset($params['action']);
+		$this->controller = $params['controller']; unset($params['controller']);
+		$this->action = $params['action']; unset($params['action']);
 		$this->id = $params['id'];
 		$this->params = array_merge($params, $_GET);
 
-		if (empty($this->controller))
+		if (empty($this->controller)) {
 			$this->controller = ROUTER_DEFAULT_CONTROLLER;
-		if (empty($this->action))
+		}
+		if (empty($this->action)) {
 			$this->action = ROUTER_DEFAULT_ACTION;
-		if (empty($this->id))
+		}
+		if (empty($this->id)) {
 			$this->id = null;
+		}
 
 		// determine controller name
 		$this->controller_name = implode(array_map('ucfirst', explode('_', $this->controller . "_controller")));
@@ -599,10 +596,7 @@ class Router extends BaseClass {
 					}
 
 					// Finally, we call the function with the resulting list of arguments
-					call_user_func_array(array(
-						$controller,
-						$this->action
-					), $args);
+					call_user_func_array(array($controller, $this->action), $args);
 				} else {
 					$this->error(404, "Action " . $this->controller_name . "." . $this->action . "() not found");
 				}
@@ -642,18 +636,17 @@ class Route {
 		}
 
 		foreach (array($request_uri, $request_uri_without) as $request) {
-			$url_regex = preg_replace_callback('@:[\w]+@', array(
-				$this,
-				'regex_url'
-			), $url);
+			$url_regex = preg_replace_callback('@:[\w]+@', array($this, 'regex_url'), $url);
 			$url_regex .= '/?';
 
 			if (preg_match('@^' . $url_regex . '$@', $request, $p_values)) {
 				array_shift($p_values);
-				foreach ($p_names as $index=>$value)
+				foreach ($p_names as $index=>$value) {
 					$this->params[substr($value, 1)] = urldecode($p_values[$index]);
-				foreach ($target as $key=>$value)
+				}
+				foreach ($target as $key=>$value) {
 					$this->params[$key] = $value;
+				}
 				$this->is_matched = true;
 				break;
 			}
