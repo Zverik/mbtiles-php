@@ -1,13 +1,15 @@
 <?
 /**
  * A PHP TileMap Server
- * 
- * Serves image tiles, UTFgrid tiles and TileJson definitions from MBTiles files (as used by TileMill). 
+ *
+ * Serves image tiles, UTFgrid tiles and TileJson definitions from MBTiles files
+ * (as used by TileMill).
  * Implements TileMapServices (@link http://wiki.osgeo.org/wiki/Tile_Map_Service_Specification).
- * 
- * Originally based on https://github.com/Zverik/mbtiles-php but refactored and extended.
- * 
- * @author E. Akerboom
+ *
+ * Originally based on https://github.com/Zverik/mbtiles-php but refactored and
+ * extended.
+ *
+ * @author E. Akerboom (github@infostreams.net)
  * @version 1.0
  * @license LGPL
  */
@@ -52,22 +54,21 @@ $r->run();
 
 
 
-
 class BaseClass {
 	protected $layer;
 	protected $db;
-	
+
 	public function __construct() {
-		
+
 	}
-	
+
 	protected function getMBTilesName() {
 		return $this->layer . ".mbtiles";
 	}
-	
+
 	protected function openDB() {
 		$filename = $this->getMBTilesName();
-		
+
 		if (file_exists($filename)) {
 			$this->db = new PDO('sqlite:' . $filename, '', '', array(PDO::ATTR_PERSISTENT=>true));
 		}
@@ -75,29 +76,30 @@ class BaseClass {
 			$this->error(404, "Incorrect tileset name: " . $this->layer);
 		}
 	}
-	
+
 	protected function closeDB() {
 		// we don't close the DB
 	}
-	
+
 	protected function error($nr, $message) {
 		$http_codes = array(
-		    404 => 'Not Found',
-		    500 => 'Internal Server Error',
-		    // we don't need the rest anyway ;-)
+			404=>'Not Found',
+			500=>'Internal Server Error',
+			// we don't need the rest anyway ;-)
 		);
 
 		header($_SERVER['SERVER_PROTOCOL'] . " $nr {$http_codes[$nr]}");
 		echo $message;
-		exit;
+		exit ;
 	}
+
 }
 
 class ServerInfoController extends BaseClass {
 	public function __construct() {
-		
+
 	}
-	
+
 	public function hello() {
 		global $r;
 
@@ -106,7 +108,7 @@ class ServerInfoController extends BaseClass {
 		echo "<br /><br />Try these! (non-exhaustive list, see source for details):";
 		echo "<ul>";
 		foreach ($r->routes as $route) {
-			if (strlen($route->url)>0 && strpos($route->url, ":layer")===false) {
+			if (strlen($route->url) > 0 && strpos($route->url, ":layer") === false) {
 				$url = $route->url;
 				echo "<li><a href='$url'>$url</a></li>";
 			}
@@ -115,14 +117,19 @@ class ServerInfoController extends BaseClass {
 		$layers = glob("*.mbtiles");
 		foreach ($layers as $l) {
 			$l = str_replace(".mbtiles", "", $l);
-			$urls = array("$l/2/1/1.png", "$l.tilejson", "$l/2/1/1.json");
+			$urls = array(
+				"$l/2/1/1.png",
+				"$l.tilejson",
+				"$l/2/1/1.json"
+			);
 			foreach ($urls as $u) {
 				echo "<li><a href='$u'>$u</a></li>";
 			}
 		}
-		
+
 		echo "</ul>";
 	}
+
 }
 
 class MapTileController extends BaseClass {
@@ -131,11 +138,11 @@ class MapTileController extends BaseClass {
 	protected $z;
 	protected $ext;
 	protected $is_tms;
-	
+
 	public function __construct() {
 		$this->is_tms = false;
 	}
-	
+
 	protected function set($layer, $x, $y, $z, $ext, $callback) {
 		$this->layer = $layer;
 		$this->x = $x;
@@ -144,17 +151,17 @@ class MapTileController extends BaseClass {
 		$this->ext = $ext;
 		$this->callback = $callback;
 	}
-	
+
 	public function serveTile($layer, $x, $y, $z, $ext, $callback) {
 		$this->set($layer, $x, $y, $z, $ext, $callback);
-		
+
 		if (!$this->is_tms) {
 			$this->y = pow(2, $this->z) - 1 - $this->y;
 		}
 
 		switch (strtolower($this->ext)) {
-			case "json":
-			case "jsonp":
+			case "json" :
+			case "jsonp" :
 				if (is_null($this->callback)) {
 					$this->jsonTile();
 				} else {
@@ -162,9 +169,9 @@ class MapTileController extends BaseClass {
 				}
 				break;
 
-			case "png":
-			case "jpeg":
-			case "jpg":
+			case "png" :
+			case "jpeg" :
+			case "jpg" :
 				$this->imageTile();
 				break;
 		}
@@ -173,34 +180,35 @@ class MapTileController extends BaseClass {
 	public function serveTmsTile($tileset, $x, $y, $z, $ext, $callback) {
 		$this->is_tms = true;
 
-		$this->serveTile($tileset."-tms", $x, $y, $z, $ext, $callback);
+		$this->serveTile($tileset . "-tms", $x, $y, $z, $ext, $callback);
 	}
-		
+
 	protected function jsonTile() {
 		$json = $this->getUTFgrid();
-	
+
 		// disable ZLIB ouput compression
-		ini_set('zlib.output_compression','Off');
+		ini_set('zlib.output_compression', 'Off');
 		header('Content-Type: application/json');
-		header('Content-Length: '.strlen($json));
+		header('Content-Length: ' . strlen($json));
 		header('Cache-Control: no-cache, no-store, max-age=0, must-revalidate');
 		header('Pragma: no-cache');
-		echo $json;	
+		echo $json;
 	}
-	
+
 	protected function jsonpTile() {
 		$json = $this->getUTFgrid();
 
 		// disable ZLIB ouput compression
-		ini_set('zlib.output_compression','Off');
+		ini_set('zlib.output_compression', 'Off');
 		header('Content-Type: application/json');
-		header('Content-Length: '.strlen($json));
+		header('Content-Length: ' . strlen($json));
 		header('Cache-Control: no-cache, no-store, max-age=0, must-revalidate');
 		header('Pragma: no-cache');
-		echo $this->callback . "($json);";	
+		echo $this->callback . "($json);";
 	}
-	
+
 	protected function imageTile() {
+		// handle the TMS shit
 		if ($this->is_tms) {
 			$this->tileset = substr($this->tileset, 0, strlen($this->tileset) - 4);
 		}
@@ -230,13 +238,13 @@ class MapTileController extends BaseClass {
 				if ($format == 'jpg') {
 					$format = 'jpeg';
 				}
-				
+
 				// now, finally, serve the tile
 				header('Content-type: image/' . $format);
 				print $data;
 
 			}
-			
+
 			// done
 			$this->closeDB();
 		}
@@ -255,24 +263,23 @@ class MapTileController extends BaseClass {
 				$this->tileset = substr($this->tileset, 0, strlen($this->tileset) - 4);
 				$flip = false;
 			}
-			
-			
+
 			$result = $this->db->query('select grid as g from grids where zoom_level=' . $this->z . ' and tile_column=' . $this->x . ' and tile_row=' . $this->y);
-			
+
 			$data = $result->fetchColumn();
 			if (!isset($data) || $data === FALSE) {
 				// nothing found - return empty JSON object
-			    return "{}";
+				return "{}";
 			} else {
 				return gzuncompress($data);
-			}		
+			}
 		}
 		catch( PDOException $e ) {
 			$this->closeDB();
 			$this->error(500, 'Error querying the database: ' . $e->getMessage());
 		}
 	}
-	
+
 	public function tileJson($layer, $callback) {
 		$this->layer = $layer;
 		$this->openDB();
@@ -295,22 +302,18 @@ class MapTileController extends BaseClass {
 			$server_url = "http://" . $_SERVER["HTTP_HOST"] . dirname($_SERVER["REQUEST_URI"]);
 
 			$tilejson['scheme'] = "xyz";
-			$tilejson['tiles'] = array(
-				$server_url . "/" . urlencode($layer) . "/{z}/{x}/{y}.png"
-			);
-			$tilejson['grid'] = array(
-				$server_url . "/" . urlencode($layer) . "/{z}/{x}/{y}.json"
-			);
-			
-			if ($callback!==null) {
+			$tilejson['tiles'] = array($server_url . "/" . urlencode($layer) . "/{z}/{x}/{y}.png");
+			$tilejson['grid'] = array($server_url . "/" . urlencode($layer) . "/{z}/{x}/{y}.json");
+
+			if ($callback !== null) {
 				$json = "$callback(" . json_encode($tilejson) . ")";
 			} else {
 				$json = json_encode($tilejson);
 			}
-			
-			ini_set('zlib.output_compression','Off');
+
+			ini_set('zlib.output_compression', 'Off');
 			header('Content-Type: application/json');
-			header('Content-Length: '.strlen($json));
+			header('Content-Length: ' . strlen($json));
 			header('Cache-Control: no-cache, no-store, max-age=0, must-revalidate');
 			header('Pragma: no-cache');
 			echo $json;
@@ -320,14 +323,16 @@ class MapTileController extends BaseClass {
 			$this->error(500, 'Error querying the database: ' . $e->getMessage());
 		}
 	}
+
 }
 
 /**
- * Implements a TileMapService that returns XML information on the provided services. 
- * 
+ * Implements a TileMapService that returns XML information on the provided
+ * services.
+ *
  * @see http://wiki.osgeo.org/wiki/Tile_Map_Service_Specification
- * @author 
- * @author Edward Akerboom
+ * @author zverik (https://github.com/Zverik)
+ * @author E. Akerboom (github@infostreams.net)
  */
 class TileMapServiceController extends BaseClass {
 
@@ -338,7 +343,7 @@ class TileMapServiceController extends BaseClass {
 
 	public function root() {
 		$base = $this->getBaseUrl();
-		
+
 		header('Content-type: text/xml');
 		echo <<<EOF
 <?xml version="1.0" encoding="UTF-8" ?>
@@ -396,7 +401,7 @@ EOF;
 					$mimetype = "image/jpeg";
 					break;
 
-				default:
+				default :
 				case "png" :
 					$format = "png";
 					$mimetype = "image/png";
@@ -446,201 +451,218 @@ EOF;
 		$params = $this->readparams($db);
 		$minzoom = $params['minzoom'];
 		$maxzoom = $params['maxzoom'];
-		
+
 		return range($minzoom, $maxzoom);
 	}
 
 	function getBaseUrl() {
 		return 'http://' . $_SERVER['HTTP_HOST'] . preg_replace('/\/(1.0.0\/)?[^\/]*$/', '/', $_SERVER['REQUEST_URI']);
 	}
-
 }
-
-
 
 
 
 
 /**
  * Rails like routing for PHP
- * 
- * Based on http://blog.sosedoff.com/2009/09/20/rails-like-php-url-router/ 
+ *
+ * Based on http://blog.sosedoff.com/2009/09/20/rails-like-php-url-router/
  * but extended in significant ways:
- * 
+ *
  * 1. Can now be deployed in a subdirectory, not just the domain root
- * 2. Will now call the indicated controller & action. Named arguments are 
- *    converted to similarly method arguments, i.e. if you specify :id in the 
+ * 2. Will now call the indicated controller & action. Named arguments are
+ *    converted to similarly method arguments, i.e. if you specify :id in the
  *    URL mapping, the value of that parameter will be provided to the method's
  * 	  '$id' parameter, if present.
  * 3. Will now allow URL mappings that contain a '?' - useful for mapping JSONP urls
  * 4. Should now correctly deal with spaces (%20) and other stuff in the URL
- * 
+ *
  * @version 2.0
  * @author Dan Sosedoff <http://twitter.com/dan_sosedoff>
- * @author Edward Akerboom <edward@infostreams.net>  
+ * @author E. Akerboom <github@infostreams.net>
  */
 define('ROUTER_DEFAULT_CONTROLLER', 'home');
 define('ROUTER_DEFAULT_ACTION', 'index');
- 
+
 class Router extends BaseClass {
-  public $request_uri;
-  public $routes;
-  public $controller, $controller_name;
-  public $action, $id;
-  public $params;
-  public $route_found = false;
- 
-  public function __construct() {
-  	$request = $this->get_request();
+	public $request_uri;
+	public $routes;
+	public $controller, $controller_name;
+	public $action, $id;
+	public $params;
+	public $route_found = false;
 
-    $this->request_uri = $request;
-    $this->routes = array();
-  }
-  
-  public function get_request() {
-	// find out the absolute path to this script
-	$here = str_replace("\\", "/", realpath(rtrim(dirname(__FILE__), '/')) . "/");
-	
-	// find out the absolute path to the document root 
-	$document_root = str_replace("\\", "/", realpath($_SERVER["DOCUMENT_ROOT"]) . "/");
-	
-	// let's see if we can return a path that is expressed *relative* to the script
-	// (i.e. if this script is in '/sites/something/router.php', and we are requesting
-	//  /sites/something/here/is/my/path.png, then this function will return 'here/is/my/path.png') 
-	if (strpos($here, $document_root) !== false) {
-		$relative_path = "/" . str_replace($document_root, "", $here);
-		return urldecode(str_replace($relative_path, "", $_SERVER["REQUEST_URI"]));
+	public function __construct() {
+		$request = $this->get_request();
+
+		$this->request_uri = $request;
+		$this->routes = array();
 	}
-	
-	// nope - we couldn't get the relative path... too bad! Return the absolute path instead. 
-	return urldecode($_SERVER["REQUEST_URI"]);
-  }
- 
-  public function map($rule, $target=array(), $conditions=array()) {
-    $this->routes[$rule] = new Route($rule, $this->request_uri, $target, $conditions);
-  }
- 
-  public function default_routes() {
-    $this->map('/:controller');
-    $this->map('/:controller/:action');
-    $this->map('/:controller/:action/:id');
-  }
- 
-  private function set_route($route) {
-    $this->route_found = true;
-    $params = $route->params;
-    $this->controller = $params['controller']; unset($params['controller']);
-    $this->action = $params['action']; unset($params['action']);
-    $this->id = $params['id']; 
-    $this->params = array_merge($params, $_GET);
- 
-    if (empty($this->controller)) $this->controller = ROUTER_DEFAULT_CONTROLLER;
-    if (empty($this->action)) $this->action = ROUTER_DEFAULT_ACTION;
-    if (empty($this->id)) $this->id = null;
- 
-    // determine controller name
-    $this->controller_name = implode(array_map('ucfirst', explode('_', $this->controller."_controller")));
-  }
- 
-  public function match_routes() {
-    foreach($this->routes as $route) {
-      if ($route->is_matched) {
-        $this->set_route($route);
-        break;
-      }
-    }
-  }
- 
-  public function run() {
-  	$this->match_routes();
-	
-  	if ($this->route_found) {
-  		// we found a route!
-  		if (class_exists($this->controller_name)) {
-  			// ... the controller exists
-	  		$controller = new $this->controller_name();
-			if (method_exists($controller, $this->action)) {
-				// ... and the action as well! Now, we have to figure out 
-				//     how we need to call this method:
 
-				// iterate this method's parameters and compare them with the parameter names
-				// we defined in the route. Then, reassemble the values from the URL and put
-				// them in the same order as method's argument list.
-				$m = new ReflectionMethod($controller, $this->action);
-				$params = $m->getParameters();
-				$args = array();
-				foreach ($params as $i=>$p) {
-					if (isset($this->params[$p->name])) {
-						$args[$i] = urldecode($this->params[$p->name]);
-					} else {
-						// we couldn't find this parameter in the URL! Set it to 'null' to indicate this.
-						$args[$i] = null;
-					}
-				}
+	public function get_request() {
+		// find out the absolute path to this script
+		$here = str_replace("\\", "/", realpath(rtrim(dirname(__FILE__), '/')) . "/");
 
-				// Finally, we call the function with the resulting list of arguments
-				call_user_func_array(array($controller, $this->action), $args);
-			} else {
-				$this->error(404, "Action " . $this->controller_name . "." . $this->action . "() not found");
+		// find out the absolute path to the document root
+		$document_root = str_replace("\\", "/", realpath($_SERVER["DOCUMENT_ROOT"]) . "/");
+
+		// let's see if we can return a path that is expressed *relative* to the script
+		// (i.e. if this script is in '/sites/something/router.php', and we are
+		// requesting
+		//  /sites/something/here/is/my/path.png, then this function will return
+		// 'here/is/my/path.png')
+		if (strpos($here, $document_root) !== false) {
+			$relative_path = "/" . str_replace($document_root, "", $here);
+			return urldecode(str_replace($relative_path, "", $_SERVER["REQUEST_URI"]));
+		}
+
+		// nope - we couldn't get the relative path... too bad! Return the absolute path
+		// instead.
+		return urldecode($_SERVER["REQUEST_URI"]);
+	}
+
+	public function map($rule, $target = array(), $conditions = array()) {
+		$this->routes[$rule] = new Route($rule, $this->request_uri, $target, $conditions);
+	}
+
+	public function default_routes() {
+		$this->map('/:controller');
+		$this->map('/:controller/:action');
+		$this->map('/:controller/:action/:id');
+	}
+
+	private function set_route($route) {
+		$this->route_found = true;
+		$params = $route->params;
+		$this->controller = $params['controller'];
+		unset($params['controller']);
+		$this->action = $params['action'];
+		unset($params['action']);
+		$this->id = $params['id'];
+		$this->params = array_merge($params, $_GET);
+
+		if (empty($this->controller))
+			$this->controller = ROUTER_DEFAULT_CONTROLLER;
+		if (empty($this->action))
+			$this->action = ROUTER_DEFAULT_ACTION;
+		if (empty($this->id))
+			$this->id = null;
+
+		// determine controller name
+		$this->controller_name = implode(array_map('ucfirst', explode('_', $this->controller . "_controller")));
+		//    foreach($w as $k => $v) $w[$k] = ucfirst($v);
+		//$this->controller_name = implode('', $w);
+	}
+
+	public function match_routes() {
+		foreach ($this->routes as $route) {
+			if ($route->is_matched) {
+				$this->set_route($route);
+				break;
 			}
-  		} else {
-  			$this->error(404, "Controller " . $this->controller_name . " not found");
-  		}
-  	} else {
-  		$this->error(404, "Page not found");
-  	}
-  }
+		}
+	}
+
+	public function run() {
+		$this->match_routes();
+
+		if ($this->route_found) {
+			// we found a route!
+			if (class_exists($this->controller_name)) {
+				// ... the controller exists
+				$controller = new $this->controller_name();
+				if (method_exists($controller, $this->action)) {
+					// ... and the action as well! Now, we have to figure out
+					//     how we need to call this method:
+
+					// iterate this method's parameters and compare them with the parameter names
+					// we defined in the route. Then, reassemble the values from the URL and put
+					// them in the same order as method's argument list.
+					$m = new ReflectionMethod($controller, $this->action);
+					$params = $m->getParameters();
+					$args = array();
+					foreach ($params as $i=>$p) {
+						if (isset($this->params[$p->name])) {
+							$args[$i] = urldecode($this->params[$p->name]);
+						} else {
+							// we couldn't find this parameter in the URL! Set it to 'null' to indicate this.
+							$args[$i] = null;
+						}
+					}
+
+					// Finally, we call the function with the resulting list of arguments
+					call_user_func_array(array(
+						$controller,
+						$this->action
+					), $args);
+				} else {
+					$this->error(404, "Action " . $this->controller_name . "." . $this->action . "() not found");
+				}
+			} else {
+				$this->error(404, "Controller " . $this->controller_name . " not found");
+			}
+		} else {
+			$this->error(404, "Page not found");
+		}
+	}
+
 }
- 
+
 class Route {
-  public $is_matched = false;
-  public $params;
-  public $url;
-  private $conditions;
- 
-  function __construct($url, $request_uri, $target, $conditions) {
-    $this->url = $url;
-    $this->params = array();
-    $this->conditions = $conditions;
-    $p_names = array(); $p_values = array();
- 
- 	// extract pattern names (catches :controller, :action, :id, etc)
-    preg_match_all('@:([\w]+)@', $url, $p_names, PREG_PATTERN_ORDER);
-    $p_names = $p_names[0];
+	public $is_matched = false;
+	public $params;
+	public $url;
+	private $conditions;
 
-	// make a version of the request with and without the '?x=y&z=a&...' part 
-    $pos = strpos($request_uri, '?');
-    if ($pos) {
-		$request_uri_without = substr($request_uri, 0, $pos);
-    } else {
-		$request_uri_without = $request_uri;
-    }
+	function __construct($url, $request_uri, $target, $conditions) {
+		$this->url = $url;
+		$this->params = array();
+		$this->conditions = $conditions;
+		$p_names = array();
+		$p_values = array();
 
- 	foreach (array($request_uri, $request_uri_without) as $request) {
-	    $url_regex = preg_replace_callback('@:[\w]+@', array($this, 'regex_url'), $url);
-	    $url_regex .= '/?';
-	 
-	    if (preg_match('@^' . $url_regex . '$@', $request, $p_values)) {
-	      array_shift($p_values);
-	      foreach($p_names as $index => $value) $this->params[substr($value,1)] = urldecode($p_values[$index]);
-	      foreach($target as $key => $value) $this->params[$key] = $value;
-	      $this->is_matched = true;
-		  break;
-	    }
- 	}
- 
-    unset($p_names); unset($p_values);
-  }
- 
-  function regex_url($matches) {
-    $key = str_replace(':', '', $matches[0]);
-    if (array_key_exists($key, $this->conditions)) {
-      return '('.$this->conditions[$key].')';
-    } 
-    else {
-      return '([a-zA-Z0-9_\+\-%]+)';
-    }
-  }
+		// extract pattern names (catches :controller, :action, :id, etc)
+		preg_match_all('@:([\w]+)@', $url, $p_names, PREG_PATTERN_ORDER);
+		$p_names = $p_names[0];
+
+		// make a version of the request with and without the '?x=y&z=a&...' part
+		$pos = strpos($request_uri, '?');
+		if ($pos) {
+			$request_uri_without = substr($request_uri, 0, $pos);
+		} else {
+			$request_uri_without = $request_uri;
+		}
+
+		foreach (array($request_uri, $request_uri_without) as $request) {
+			$url_regex = preg_replace_callback('@:[\w]+@', array(
+				$this,
+				'regex_url'
+			), $url);
+			$url_regex .= '/?';
+
+			if (preg_match('@^' . $url_regex . '$@', $request, $p_values)) {
+				array_shift($p_values);
+				foreach ($p_names as $index=>$value)
+					$this->params[substr($value, 1)] = urldecode($p_values[$index]);
+				foreach ($target as $key=>$value)
+					$this->params[$key] = $value;
+				$this->is_matched = true;
+				break;
+			}
+		}
+
+		unset($p_names);
+		unset($p_values);
+	}
+
+	function regex_url($matches) {
+		$key = str_replace(':', '', $matches[0]);
+		if (array_key_exists($key, $this->conditions)) {
+			return '(' . $this->conditions[$key] . ')';
+		} else {
+			return '([a-zA-Z0-9_\+\-%]+)';
+		}
+	}
+
 }
-
 ?>
