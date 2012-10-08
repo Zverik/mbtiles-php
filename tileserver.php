@@ -46,6 +46,16 @@ $r->map(":layer/:z/:x/:y.:ext\?:argument=:callback",
 		array("layer"=>$_identifier, "x"=>$_number, "y"=>$_number, "z"=>$_number, 
 		      "ext"=>"(json|jsonp)", "argument"=>$_identifier, "callback"=>$_identifier));
 
+$r->map(":layer/:z/:x/:y.grid.:ext",
+		array("controller"=>"maptile", "action"=>"serveTile"), 
+		array("layer"=>$_identifier, "x"=>$_number, "y"=>$_number, "z"=>$_number, 
+		      "ext"=>"(json|jsonp)", "argument"=>$_identifier, "callback"=>$_identifier));
+
+$r->map(":layer/:z/:x/:y.grid.:ext\?:argument=:callback",
+		array("controller"=>"maptile", "action"=>"serveTile"), 
+		array("layer"=>$_identifier, "x"=>$_number, "y"=>$_number, "z"=>$_number, 
+		      "ext"=>"(json|jsonp)", "argument"=>$_identifier, "callback"=>$_identifier));
+		      		      		      
 $r->map(":layer.tilejson", 
 		array("controller"=>"maptile", "action"=>"tilejson"), array("layer"=>$_identifier));
 
@@ -73,7 +83,7 @@ class BaseClass {
 		$filename = $this->getMBTilesName();
 
 		if (file_exists($filename)) {
-			$this->db = new PDO('sqlite:' . $filename, '', '', array(PDO::ATTR_PERSISTENT=>true));
+			$this->db = new PDO('sqlite:' . $filename, '', '');
 		}
 		if (!isset($this->db)) {
 			$this->error(404, "Incorrect tileset name: " . $this->layer);
@@ -81,7 +91,8 @@ class BaseClass {
 	}
 
 	protected function closeDB() {
-		// we don't close the DB
+		// close the database
+		$this->db = null;
 	}
 
 	protected function error($nr, $message) {
@@ -190,7 +201,7 @@ class MapTileController extends BaseClass {
 		ini_set('zlib.output_compression', 'Off');
 
 		// serve JSON file
-		header('Content-Type: application/json');
+		header('Content-Type: application/json; charset=utf-8');
 		header('Content-Length: ' . strlen($json));
 		header('Cache-Control: no-cache, no-store, max-age=0, must-revalidate');
 		header('Pragma: no-cache');
@@ -199,16 +210,17 @@ class MapTileController extends BaseClass {
 
 	protected function jsonpTile() {
 		$json = $this->getUTFgrid();
+		$output = $this->callback . "($json)";
 
 		// disable ZLIB ouput compression
 		ini_set('zlib.output_compression', 'Off');
 
 		// serve JSON file
-		header('Content-Type: application/json');
-		header('Content-Length: ' . strlen($json));
+		header('Content-Type: application/json; charset=utf-8');
+		header('Content-Length: ' . strlen($output));
 		header('Cache-Control: no-cache, no-store, max-age=0, must-revalidate');
 		header('Pragma: no-cache');
-		echo $this->callback . "($json);";
+		echo $output;
 	}
 
 	protected function imageTile() {
@@ -275,7 +287,28 @@ class MapTileController extends BaseClass {
 				// nothing found - return empty JSON object
 				return "{}";
 			} else {
-				return gzuncompress($data);
+				// get the gzipped json from the database
+				$grid = gzuncompress($data);
+				
+				// manually add the data for the interactivity layer by means of string manipulation
+				// to prevent a bunch of costly calls to json_encode & json_decode
+				//
+				// first, strip off the last '}' character
+				$grid = substr(trim($grid),0,-1);
+				// then, add a new key labelled 'data'
+				$grid .= ',"data":{';
+
+				// stuff that key with the actual data
+				$result = $this->db->query('select key_name as key, key_json as json from grid_data where zoom_level=' . $this->z . ' and tile_column=' . $this->x . ' and tile_row=' . $this->y);
+				while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
+					$grid .= '"' . $row['key'] . '":' . $row['json'] . ',';
+				}
+
+				// finish up
+				$grid = rtrim($grid,',') . "}}";
+
+				// done
+				return $grid;
 			}
 		}
 		catch( PDOException $e ) {
@@ -308,7 +341,7 @@ class MapTileController extends BaseClass {
 			$tilejson['tiles'] = array(
 				$server_url . "/" . urlencode($layer) . "/{z}/{x}/{y}.png"
 			);
-			$tilejson['grid'] = array(
+			$tilejson['grids'] = array(
 				$server_url . "/" . urlencode($layer) . "/{z}/{x}/{y}.json"
 			);
 
