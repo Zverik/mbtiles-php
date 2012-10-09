@@ -327,13 +327,18 @@ class MapTileController extends BaseClass {
 
 			$result = $this->db->query('select name, value from metadata');
 			while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
-				$tilejson[trim($row['name'])] = $row['value'];
+				$key = trim($row['name']);
+				$value = $row['value'];
+				if (in_array($key, array('maxzoom', 'minzoom'))) {
+					$value = intval($value);
+				}
+				$tilejson[$key] = $value;
 			}
 			if (array_key_exists('bounds', $tilejson)) {
-				$tilejson['bounds'] = explode(',', $tilejson['bounds']);
+				$tilejson['bounds'] = array_map('floatval', explode(',', $tilejson['bounds']));
 			}
 			if (array_key_exists('center', $tilejson)) {
-				$tilejson['center'] = explode(',', $tilejson['center']);
+				$tilejson['center'] = array_map('floatval', explode(',', $tilejson['center']));
 			}
 
 			// find out the absolute path to this script
