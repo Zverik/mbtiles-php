@@ -1,4 +1,4 @@
-<?
+<?php
 /**
  * A PHP TileMap Server
  *
@@ -580,7 +580,9 @@ class Router extends BaseClass {
 		$params = $route->params;
 		$this->controller = $params['controller']; unset($params['controller']);
 		$this->action = $params['action']; unset($params['action']);
-		$this->id = $params['id'];
+		if (isset($params['id'])) { 
+			$this->id = $params['id'];
+		}
 		$this->params = array_merge($params, $_GET);
 
 		if (empty($this->controller)) {
