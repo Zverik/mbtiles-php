@@ -2,3 +2,7 @@ MBTiles PHP backend
 
 put those 2 files into any directory along with *.mbtiles
 now ..../<name>/z/x/y.png is read from <name>.mbtiles
+
+Note: user infostreams almost completely rewrote the script
+to support UTFGrid, json tiles etc. I recommend using his branch:
+https://github.com/infostreams/mbtiles-php/
