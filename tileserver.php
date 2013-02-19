@@ -3,20 +3,20 @@
  * A PHP TileMap Server
  *
  * Serves image tiles, UTFgrid tiles and TileJson definitions 
- * from MBTiles files (as used by TileMill). (Party) implements
+ * from MBTiles files (as used by TileMill). (Partly) implements
  * the Tile Map Services Specification.
  *
  * Originally based on https://github.com/Zverik/mbtiles-php, 
  * but refactored and extended.
  *
  * @author E. Akerboom (github@infostreams.net)
- * @version 1.0
+ * @version 1.1
  * @license LGPL
  */
 header('Access-Control-Allow-Origin: *');
 
 $_identifier = '[\w\d_-\s]+';
-$_number = "\d+";
+$_number = '\d+';
 
 $r = new Router();
 $r->map("", 
@@ -34,28 +34,28 @@ $r->map("1.0.0/:layer",
 $r->map("1.0.0/:layer/:z/:x/:y.:ext", 
 		array("controller"=>"maptile", "action"=>"serveTmsTile"), 
 		array("layer"=>$_identifier, "x"=>$_number, "y"=>$_number, "z"=>$_number, 
-		      "ext"=>"(png|jpg|jpeg|json)"));
+			  "ext"=>"(png|jpg|jpeg|json)"));
 
 $r->map(":layer/:z/:x/:y.:ext",
 		array("controller"=>"maptile", "action"=>"serveTile"), 
 		array("layer"=>$_identifier, "x"=>$_number, "y"=>$_number, "z"=>$_number, 
-		      "ext"=>"(png|jpg|jpeg|json)"));
+			  "ext"=>"(png|jpg|jpeg|json)"));
 
 $r->map(":layer/:z/:x/:y.:ext\?:argument=:callback",
 		array("controller"=>"maptile", "action"=>"serveTile"), 
 		array("layer"=>$_identifier, "x"=>$_number, "y"=>$_number, "z"=>$_number, 
-		      "ext"=>"(json|jsonp)", "argument"=>$_identifier, "callback"=>$_identifier));
+			  "ext"=>"(json|jsonp)", "argument"=>$_identifier, "callback"=>$_identifier));
 
 $r->map(":layer/:z/:x/:y.grid.:ext",
 		array("controller"=>"maptile", "action"=>"serveTile"), 
 		array("layer"=>$_identifier, "x"=>$_number, "y"=>$_number, "z"=>$_number, 
-		      "ext"=>"(json|jsonp)", "argument"=>$_identifier, "callback"=>$_identifier));
+			  "ext"=>"(json|jsonp)", "argument"=>$_identifier, "callback"=>$_identifier));
 
 $r->map(":layer/:z/:x/:y.grid.:ext\?:argument=:callback",
 		array("controller"=>"maptile", "action"=>"serveTile"), 
 		array("layer"=>$_identifier, "x"=>$_number, "y"=>$_number, "z"=>$_number, 
-		      "ext"=>"(json|jsonp)", "argument"=>$_identifier, "callback"=>$_identifier));
-		      		      		      
+			  "ext"=>"(json|jsonp)", "argument"=>$_identifier, "callback"=>$_identifier));
+			  			  			  
 $r->map(":layer.tilejson", 
 		array("controller"=>"maptile", "action"=>"tilejson"), array("layer"=>$_identifier));
 
@@ -195,6 +195,9 @@ class MapTileController extends BaseClass {
 	}
 
 	protected function jsonTile() {
+		$etag = $this->etag("json");
+		$this->checkCache($etag);
+
 		$json = $this->getUTFgrid();
 
 		// disable ZLIB ouput compression
@@ -203,27 +206,56 @@ class MapTileController extends BaseClass {
 		// serve JSON file
 		header('Content-Type: application/json; charset=utf-8');
 		header('Content-Length: ' . strlen($json));
-		header('Cache-Control: no-cache, no-store, max-age=0, must-revalidate');
-		header('Pragma: no-cache');
+		$this->cachingHeaders($etag);
+
 		echo $json;
 	}
 
 	protected function jsonpTile() {
+		$etag = $this->etag("jsonp");
+		$this->checkCache($etag);
+
 		$json = $this->getUTFgrid();
 		$output = $this->callback . "($json)";
 
-		// disable ZLIB ouput compression
+		// disable ZLIB output compression
 		ini_set('zlib.output_compression', 'Off');
 
 		// serve JSON file
 		header('Content-Type: application/json; charset=utf-8');
 		header('Content-Length: ' . strlen($output));
-		header('Cache-Control: no-cache, no-store, max-age=0, must-revalidate');
-		header('Pragma: no-cache');
+		$this->cachingHeaders($etag);
+
 		echo $output;
 	}
 
+	protected function etag($type) {
+		return sha1(sprintf("%s-%s-%s-%s-%s", $this->tileset, $this->x, $this->y, $this->z, $type));
+	}
+
+	protected function checkCache($etag) {
+		if (isset($_SERVER['HTTP_IF_NONE_MATCH']) && $_SERVER['HTTP_IF_NONE_MATCH'] == $etag) {
+			header('HTTP/1.1 304 Not Modified');
+			exit();
+		}
+	}
+
+	protected function cachingHeaders($etag=null) {
+		$day = 60*60*24;
+		$expires = $day * 14;
+
+		header("Expires: " . gmdate('D, d M Y H:i:s', time()+$expires));
+		header("Pragma: cache");
+		header("Cache-Control: max-age=$expires");
+		if (is_string($etag)) {
+			header("ETag: {$etag}");
+		}
+	}
+
 	protected function imageTile() {
+		$etag = $this->etag("img");
+		$this->checkCache($etag);
+
 		if ($this->is_tms) {
 			$this->tileset = substr($this->tileset, 0, strlen($this->tileset) - 4);
 		}
@@ -242,6 +274,7 @@ class MapTileController extends BaseClass {
 				$trans_colour = imagecolorallocatealpha($png, 0, 0, 0, 127);
 				imagefill($png, 0, 0, $trans_colour);
 				header('Content-type: image/png');
+				$this->cachingHeaders($etag);
 				imagepng($png);
 
 			} else {
@@ -257,6 +290,7 @@ class MapTileController extends BaseClass {
 
 				// - serve the tile
 				header('Content-type: image/' . $format);
+				$this->cachingHeaders($etag);
 				print $data;
 
 			}
@@ -359,8 +393,8 @@ class MapTileController extends BaseClass {
 			ini_set('zlib.output_compression', 'Off');
 			header('Content-Type: application/json');
 			header('Content-Length: ' . strlen($json));
-			header('Cache-Control: no-cache, no-store, max-age=0, must-revalidate');
-			header('Pragma: no-cache');
+			$this->cachingHeaders();
+
 			echo $json;
 		}
 		catch( PDOException $e ) {
@@ -516,9 +550,9 @@ EOF;
  *
  * 1. Can now be deployed in a subdirectory, not just the domain root
  * 2. Will now call the indicated controller & action. Named arguments are
- *    converted to similarly method arguments, i.e. if you specify :id in the
- *    URL mapping, the value of that parameter will be provided to the method's
- *    '$id' parameter, if present.
+ *	converted to similarly method arguments, i.e. if you specify :id in the
+ *	URL mapping, the value of that parameter will be provided to the method's
+ *	'$id' parameter, if present.
  * 3. Will now allow URL mappings that contain a '?' - useful for mapping JSONP urls
  * 4. Should now correctly deal with spaces (%20) and other stuff in the URL
  *
@@ -616,7 +650,7 @@ class Router extends BaseClass {
 				$controller = new $this->controller_name();
 				if (method_exists($controller, $this->action)) {
 					// ... and the action as well! Now, we have to figure out
-					//     how we need to call this method:
+					//	 how we need to call this method:
 
 					// iterate this method's parameters and compare them with the parameter names
 					// we defined in the route. Then, reassemble the values from the URL and put
