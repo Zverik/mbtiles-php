@@ -147,6 +147,7 @@ class MapTileController extends BaseClass {
 	protected $x;
 	protected $y;
 	protected $z;
+	protected $tileset;
 	protected $ext;
 	protected $is_tms;
 
