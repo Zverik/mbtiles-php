@@ -231,7 +231,7 @@ class MapTileController extends BaseClass {
 	}
 
 	protected function etag($type) {
-		return sha1(sprintf("%s-%s-%s-%s-%s", $this->tileset, $this->x, $this->y, $this->z, $type));
+		return sha1(sprintf("%s-%s-%s-%s-%s-%s", $this->tileset, $this->x, $this->y, $this->z, $type, filemtime($this->getMBTilesName())));
 	}
 
 	protected function checkCache($etag) {
@@ -243,8 +243,10 @@ class MapTileController extends BaseClass {
 
 	protected function cachingHeaders($etag=null) {
 		$day = 60*60*24;
-		$expires = $day * 14;
+		$expires = 1 * $day;
 
+		// For an explanation on how the expires header and the etag header work together,
+		// please see http://stackoverflow.com/a/500103/426224
 		header("Expires: " . gmdate('D, d M Y H:i:s', time()+$expires));
 		header("Pragma: cache");
 		header("Cache-Control: max-age=$expires");
