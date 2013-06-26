@@ -5,7 +5,7 @@ Setup for mbtiles-php on AWS EC2 instance
 Requirements 
 
 * Setup AWS Ubuntu LTS  12.04
-o Helpful Link:
+	* 	Helpful Link:
 	* http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/putty.html
 
 * Update (sudo aptitude update) 
@@ -16,22 +16,23 @@ o Helpful Link:
 * Add sqlite (sudo apt-get install php5-sqlite)
 * Add php5-gd (sudo apt-get install php5-gd)
 * Add git (sudo apt-get install git)
-* 
-*edit cd /etc/apache2/sites-available$ vi default
-o 	Change AllowOverride to All in /var/www directory
-o 	For more help visit http://httpd.apache.org/docs/2.0/howto/htaccess.html
+
+* Edit cd /etc/apache2/sites-available$ vi default
+*		Change AllowOverride to All in /var/www directory
+*	 	For more help visit http://httpd.apache.org/docs/2.0/howto/htaccess.html
 
 * Restart (sudo service apache2 restart)
-* 	Test if php is is working:
-o 		cd /var/www
-o 		enter (vi test.php)
-o 		hit ‘i’ and enter ( <?php      phpinfo();         ?>)
-o 		press escape
-o 		enter :wq!
-o 		Go to yourserver.com/test.php
+* Test if php is is working:
+*		cd /var/www
+*		type (vi test.php)
+*		hit ‘i’ and type ( <?php      phpinfo();         ?>)
+*		press escape
+*		enter :wq!
+*		Go to yourserver.com/test.php
 
 * Add tileserver.php, .htaccess and [filename].mbtiles into a directory in /var/www
-o	 If you are using git use (sudo git clone (your repository)
+*		If you are using git use (sudo git clone (your repository)
+		
 * Restart (sudo service apache2 restart)
 
 
