@@ -1,0 +1,19 @@
+<html>
+<head>
+<link href='//api.tiles.mapbox.com/mapbox.js/v1.3.1/mapbox.css' rel='stylesheet' />
+<link href='leaflet/leaflet.css' rel='stylesheet' type='text/css' />
+<style>
+#map-div {
+  width:512px;
+  height:512px;
+}
+</style>
+  <script src='//api.tiles.mapbox.com/mapbox.js/v1.3.1/mapbox.js'></script>
+</head>
+<body>
+<div id='map-div'></div>
+<script type='text/javascript'>
+var map = L.mapbox.map('map-div', 'http://earthatlas.info/nz/tiles/nz-popden.tilejson')
+.setView([-41.273, 173.3], 6);
+</script>
+</body>

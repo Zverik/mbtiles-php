@@ -597,7 +597,14 @@ class Router extends BaseClass {
 		// return 'here/is/my/path.png')
 		if (strpos($here, $document_root) !== false) {
 			$relative_path = "/" . str_replace($document_root, "", $here);
-			return urldecode(str_replace($relative_path, "", $_SERVER["REQUEST_URI"]));
+            $p = $_SERVER["REQUEST_URI"];
+            if ($relative_path === '/') {
+                $p = preg_replace('/^\/+/', '', $p);
+            } else {
+                $p = urldecode(str_replace($relative_path, "", $_SERVER["REQUEST_URI"]));
+            }
+			// return urldecode(str_replace($relative_path, "", $_SERVER["REQUEST_URI"]));
+			return $p;
 		}
 
 		// nope - we couldn't get the relative path... too bad! Return the absolute path
