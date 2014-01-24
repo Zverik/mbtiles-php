@@ -3,14 +3,13 @@
 <head>
   <title>Example map</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-  <script type="text/javascript" src="js/jquery.min.js"></script>
-  <script type="text/javascript" src="map-includes/leaflet/leaflet.js"></script>
-  <script type="text/javascript" src="map-includes/wax/dist/wax.leaf.min.js"></script>
-  <link rel="stylesheet" type="text/css" href="map-includes/leaflet/leaflet.css"/>
-  <!--[if IE]>
-  <link rel="stylesheet" type="text/css" href="map-includes/leaflet/leaflet.ie.css"/><![endif]-->
-  <link rel="stylesheet" type="text/css" href="map-includes/wax/theme/controls.css"/>
+  <script src='//api.tiles.mapbox.com/mapbox.js/v1.6.1/mapbox.js'></script>
+  <link href='//api.tiles.mapbox.com/mapbox.js/v1.6.1/mapbox.css' rel='stylesheet' />
+
   <style type='text/css'>
+    body {
+      font-family: Helvetica, Arial, sans;
+    }
     #map {
       width: 800px;
       height: 400px;
@@ -26,26 +25,14 @@
 </head>
 <body>
 <h1>Example map</h1>
-<p>This is an example map showing how you can integrate a map in your web page using Leaflet, Wax, and mbtiles-php.
-  The map in this example was generated with TileMill.</p>
+<p>This is an example map showing how you can integrate a map in your web page using
+  <a href='https://www.mapbox.com/mapbox.js/'>Mapbox.js</a> and
+  <a href='https://github.com/infostreams/mbtiles-php'>mbtiles-php</a>.
+  The map in this example was generated with <a href='https://www.mapbox.com/tilemill/'>TileMill</a>.</p>
 <div id='map'></div>
 
-<script type="text/javascript" async>
-  $(document).ready(function () {
-    // initialize the map
-    wax.tilejson('server/basemap.tilejson',
-            function (tilejson) {
-              var map = new L.Map('map', {}).addLayer(new wax.leaf.connector(tilejson));
-              map.fitWorld();
-              map.setZoom(2);
-
-              // add click & tooltip functionality
-              wax.leaf.interaction()
-                      .map(map)
-                      .tilejson(tilejson)
-                      .on(wax.tooltip().animate(true).parent(map._container).events());
-            });
-  });
+<script type="text/javascript">
+  L.mapbox.map('map', 'server/basemap.tilejson');
 </script>
 </body>
 </html>
