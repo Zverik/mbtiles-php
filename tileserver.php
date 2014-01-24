@@ -597,14 +597,16 @@ class Router extends BaseClass {
 		// return 'here/is/my/path.png')
 		if (strpos($here, $document_root) !== false) {
 			$relative_path = "/" . str_replace($document_root, "", $here);
-            $p = $_SERVER["REQUEST_URI"];
-            if ($relative_path === '/') {
-                $p = preg_replace('/^\/+/', '', $p);
-            } else {
-                $p = urldecode(str_replace($relative_path, "", $_SERVER["REQUEST_URI"]));
-            }
-			// return urldecode(str_replace($relative_path, "", $_SERVER["REQUEST_URI"]));
-			return $p;
+
+			# fix for https://github.com/infostreams/mbtiles-php/issues/4
+			$path = $_SERVER["REQUEST_URI"];
+			if ($relative_path === '/') {
+				$path = preg_replace('/^\/+/', '', $path);
+			} else {
+				$path = urldecode(str_replace($relative_path, "", $_SERVER["REQUEST_URI"]));
+			}
+
+			return $path;
 		}
 
 		// nope - we couldn't get the relative path... too bad! Return the absolute path
