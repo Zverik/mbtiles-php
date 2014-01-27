@@ -10,7 +10,6 @@
     body {
       font-family: Helvetica, Arial, sans;
     }
-    #layer-map,
     #map {
       width: 800px;
       height: 400px;
@@ -25,22 +24,29 @@
   </style>
 </head>
 <body>
-<h1>Example map</h1>
+<h1>Example map with layers</h1>
 <p>This is an example map showing how you can integrate a map in your web page using
   <a href='https://www.mapbox.com/mapbox.js/'>Mapbox.js</a> and
   <a href='https://github.com/infostreams/mbtiles-php'>mbtiles-php</a>.
 </p>
 <p>
-  There's also an example map that showcases <a href='index-layers.html'>how to use different layers in your map</a>.
+  There's also an example map that showcases how to embed <a href='index.html'>a regular map without layers</a>.
 </p>
 <p>
   The map in this example was generated with <a href='https://www.mapbox.com/tilemill/'>TileMill</a>.
 </p>
 <div id='map'></div>
-
 <script type="text/javascript">
-  // simple map, no layers
-  L.mapbox.map('map', 'server/basemap.tilejson');
+  // initialize map
+  var map = L.map('map').setView([0,0], 3);
+
+  // define layers
+  L.control.layers({
+    'Modern map': L.mapbox.tileLayer('server/basemap.tilejson', {maxZoom: 5}).addTo(map),
+    'Mercator 1861': L.mapbox.tileLayer('server/1861_Mercator_World.tilejson', {maxZoom: 3})
+  }, {
+    'Regions': L.mapbox.tileLayer('server/regions.tilejson')
+  }).addTo(map);
 </script>
 </body>
 </html>
