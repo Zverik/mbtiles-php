@@ -247,11 +247,12 @@ class MapTileController extends BaseClass {
 
 		// For an explanation on how the expires header and the etag header work together,
 		// please see http://stackoverflow.com/a/500103/426224
-		header("Expires: " . gmdate('D, d M Y H:i:s', time()+$expires));
+		header("Expires: " . gmdate('D, d M Y H:i:s \G\M\T', time()+$expires));
 		header("Pragma: cache");
 		header("Cache-Control: max-age=$expires");
 		if (is_string($etag)) {
-			header("ETag: {$etag}");
+			// Fix for https://github.com/infostreams/mbtiles-php/issues/11
+			header("ETag: \"{$etag}\"");
 		}
 	}
 
@@ -388,6 +389,11 @@ class MapTileController extends BaseClass {
 			$tilejson['grids'] = array(
 				$server_url . "/" . urlencode($layer) . "/{z}/{x}/{y}.json"
 			);
+
+			// Include a (mandatory) link to the webpage this map is included on
+			// Perhaps use referrer instead?
+			// 'Fixes' https://github.com/infostreams/mbtiles-php/issues/12
+			$tilejson['webpage'] = $server_url;
 
 			if ($callback !== null) {
 				$json = "$callback(" . json_encode($tilejson) . ")";
