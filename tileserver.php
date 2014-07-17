@@ -15,7 +15,7 @@
  */
 header('Access-Control-Allow-Origin: *');
 
-$_identifier = '[\w\d_-\s]+';
+$_identifier = '[\w\d_\-\s]+';
 $_number = '\d+';
 
 $r = new Router();
