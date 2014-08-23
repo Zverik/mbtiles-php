@@ -49,4 +49,4 @@ create a separate high-res map, [as described here](https://www.mapbox.com/tilem
 and name it "\<mapname\>@2x.mbtiles" - where \<mapname\> is the name of your regular, normal
 resolution map.
 
-If such a file does not exist, then these customers will be served tiles from the regular map.
+If such a file does not exist, then these visitors will be served tiles from the regular map.
