@@ -17,6 +17,7 @@ header('Access-Control-Allow-Origin: *');
 
 $_identifier = '[\w\d_\-\s]+';
 $_number = '\d+';
+$_retina = '(\\@2x)?';
 
 $r = new Router();
 $r->map("", 
@@ -31,35 +32,36 @@ $r->map("1.0.0",
 $r->map("1.0.0/:layer", 
 		array("controller"=>"TileMapService", "action"=>"resource"), array("layer"=>$_identifier));
 
-$r->map("1.0.0/:layer/:z/:x/:y.:ext", 
+$r->map("1.0.0/:layer/:z/:x/:y:is_retina.:ext",
 		array("controller"=>"maptile", "action"=>"serveTmsTile"), 
-		array("layer"=>$_identifier, "x"=>$_number, "y"=>$_number, "z"=>$_number, 
-			  "ext"=>"(png|jpg|jpeg|json)"));
+		array("layer"=>$_identifier, "x"=>$_number, "y"=>$_number, "z"=>$_number,
+		      "is_retina"=>$_retina, "ext"=>"(png|jpg|jpeg|json)"));
 
-$r->map(":layer/:z/:x/:y.:ext",
+$r->map(":layer/:z/:x/:y:is_retina.:ext",
 		array("controller"=>"maptile", "action"=>"serveTile"), 
-		array("layer"=>$_identifier, "x"=>$_number, "y"=>$_number, "z"=>$_number, 
-			  "ext"=>"(png|jpg|jpeg|json)"));
+		array("layer"=>$_identifier, "x"=>$_number, "y"=>$_number, "z"=>$_number,
+		      "is_retina"=>$_retina, "ext"=>"(png|jpg|jpeg|json)"));
 
-$r->map(":layer/:z/:x/:y.:ext\?:argument=:callback",
-		array("controller"=>"maptile", "action"=>"serveTile"), 
-		array("layer"=>$_identifier, "x"=>$_number, "y"=>$_number, "z"=>$_number, 
-			  "ext"=>"(json|jsonp)", "argument"=>$_identifier, "callback"=>$_identifier));
-
-$r->map(":layer/:z/:x/:y.grid.:ext",
+$r->map(":layer/:z/:x/:y.:ext\\?:argument=:callback",
 		array("controller"=>"maptile", "action"=>"serveTile"), 
 		array("layer"=>$_identifier, "x"=>$_number, "y"=>$_number, "z"=>$_number, 
 			  "ext"=>"(json|jsonp)", "argument"=>$_identifier, "callback"=>$_identifier));
 
-$r->map(":layer/:z/:x/:y.grid.:ext\?:argument=:callback",
+$r->map(":layer/:z/:x/:y:is_retina.grid.:ext",
 		array("controller"=>"maptile", "action"=>"serveTile"), 
-		array("layer"=>$_identifier, "x"=>$_number, "y"=>$_number, "z"=>$_number, 
-			  "ext"=>"(json|jsonp)", "argument"=>$_identifier, "callback"=>$_identifier));
-			  			  			  
+		array("layer"=>$_identifier, "x"=>$_number, "y"=>$_number, "z"=>$_number,
+		      "is_retina"=>$_retina, "ext"=>"(json|jsonp)"));
+
+$r->map(":layer/:z/:x/:y:is_retina.grid.:ext\\?:argument=:callback",
+		array("controller"=>"maptile", "action"=>"serveTile"), 
+		array("layer"=>$_identifier, "x"=>$_number, "y"=>$_number, "z"=>$_number,
+		      "is_retina"=>$_retina, "ext"=>"(json|jsonp)",
+		      "argument"=>$_identifier, "callback"=>$_identifier));
+
 $r->map(":layer.tilejson", 
 		array("controller"=>"maptile", "action"=>"tilejson"), array("layer"=>$_identifier));
 
-$r->map(":layer.tilejsonp\?:argument=:callback", 
+$r->map(":layer.tilejsonp\\?:argument=:callback",
 		array("controller"=>"maptile", "action"=>"tilejson"), 
 		array("layer"=>$_identifier, "argument"=>$_identifier, "callback"=>$_identifier));
 
@@ -69,6 +71,7 @@ $r->run();
 
 class BaseClass {
 	protected $layer;
+	protected $is_retina = false;
 	protected $db;
 
 	public function __construct() {
@@ -76,13 +79,26 @@ class BaseClass {
 	}
 
 	protected function getMBTilesName() {
-		return $this->layer . ".mbtiles";
+		$options = array();
+		if ($this->is_retina) {
+			// for retina requests, first check if a retina map exists
+			$options[] = "{$this->layer}@2x.mbtiles";
+		}
+		$options[] = "{$this->layer}.mbtiles";
+
+		foreach ($options as $o) {
+			if (file_exists($o)) {
+				return $o;
+			}
+		}
+
+		return false;
 	}
 
 	protected function openDB() {
 		$filename = $this->getMBTilesName();
 
-		if (file_exists($filename)) {
+		if ($filename !== false) {
 			$this->db = new PDO('sqlite:' . $filename, '', '');
 		}
 		if (!isset($this->db)) {
@@ -150,22 +166,24 @@ class MapTileController extends BaseClass {
 	protected $tileset;
 	protected $ext;
 	protected $is_tms;
+	protected $callback;
 
 	public function __construct() {
 		$this->is_tms = false;
 	}
 
-	protected function set($layer, $x, $y, $z, $ext, $callback) {
+	protected function set($layer, $x, $y, $z, $ext, $callback, $is_retina) {
 		$this->layer = $layer;
 		$this->x = $x;
 		$this->y = $y;
 		$this->z = $z;
 		$this->ext = $ext;
 		$this->callback = $callback;
+		$this->is_retina = is_bool($is_retina)?$is_retina:strtolower(trim($is_retina))=="@2x";
 	}
 
-	public function serveTile($layer, $x, $y, $z, $ext, $callback) {
-		$this->set($layer, $x, $y, $z, $ext, $callback);
+	public function serveTile($layer, $x, $y, $z, $ext, $callback, $is_retina=FALSE) {
+		$this->set($layer, $x, $y, $z, $ext, $callback, $is_retina);
 
 		if (!$this->is_tms) {
 			$this->y = pow(2, $this->z) - 1 - $this->y;
@@ -189,10 +207,10 @@ class MapTileController extends BaseClass {
 		}
 	}
 
-	public function serveTmsTile($tileset, $x, $y, $z, $ext, $callback) {
+	public function serveTmsTile($tileset, $x, $y, $z, $ext, $callback, $is_retina) {
 		$this->is_tms = true;
 
-		$this->serveTile($tileset . "-tms", $x, $y, $z, $ext, $callback);
+		$this->serveTile($tileset . "-tms", $x, $y, $z, $ext, $callback, $is_retina);
 	}
 
 	protected function jsonTile() {
@@ -731,13 +749,15 @@ class Route {
 		}
 
 		foreach (array($request_uri, $request_uri_without) as $request) {
+			// replace :controller, :action (etc) with the regexps defined in $this->conditions
 			$url_regex = preg_replace_callback('@:[\w]+@', array($this, 'regex_url'), $url);
 			$url_regex .= '/?';
 
 			if (preg_match('@^' . $url_regex . '$@', $request, $p_values)) {
 				array_shift($p_values);
-				foreach ($p_names as $index=>$value) {
-					$this->params[substr($value, 1)] = urldecode($p_values[$index]);
+				foreach ($p_names as $value) {
+					$key = substr($value, 1);
+					$this->params[$key] = urldecode($p_values[$key]);
 				}
 				foreach ($target as $key=>$value) {
 					$this->params[$key] = $value;
@@ -754,10 +774,10 @@ class Route {
 	function regex_url($matches) {
 		$key = str_replace(':', '', $matches[0]);
 		if (array_key_exists($key, $this->conditions)) {
-			return '(' . $this->conditions[$key] . ')';
+			// use named subpatterns so we can obtain any matches by name
+			return '(?P<' . $key . '>' . $this->conditions[$key] . ')';
 		} else {
 			return '([a-zA-Z0-9_\+\-%]+)';
 		}
 	}
 }
-?>
