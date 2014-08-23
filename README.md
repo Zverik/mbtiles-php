@@ -40,3 +40,13 @@ Requirements
 For this to work, you need to have the pdo_sqlite and GD extensions installed. Both should be
 enabled by default in a standard PHP installation. You can check the output of phpinfo() to
 see if they are enabled in your setup.
+
+Retina maps
+-----------
+This server supports separate maps for high-resolution devices, such as phones with Retina
+displays. If you want to deliver high resolution maps to these visitors, then you need to
+create a separate high-res map, [as described here](https://www.mapbox.com/tilemill/docs/guides/high-resolution-tiles/)
+and name it "\<mapname\>@2x.mbtiles" - where \<mapname\> is the name of your regular, normal
+resolution map.
+
+If such a file does not exist, then these customers will be served tiles from the regular map.
