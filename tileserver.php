@@ -2,76 +2,75 @@
 /**
  * A PHP TileMap Server
  *
- * Serves image tiles, UTFgrid tiles and TileJson definitions 
+ * Serves image tiles, UTFgrid tiles and TileJson definitions
  * from MBTiles files (as used by TileMill). (Partly) implements
  * the Tile Map Services Specification.
- *
- * Originally based on https://github.com/Zverik/mbtiles-php, 
+ * 
+ * Originally based on https://github.com/Zverik/mbtiles-php,
  * but refactored and extended.
  *
- * @author E. Akerboom (github@infostreams.net)
- * @version 1.1
+ * @author  E. Akerboom (github@infostreams.net)
+ * @version 1.2
  * @license LGPL
  */
 header('Access-Control-Allow-Origin: *');
 
 $_identifier = '[\w\d_\-\s]+';
-$_number = '\d+';
-$_retina = '(\\@2x)?';
+$_number     = '\d+';
+$_retina     = '(\\@2x)?';
 
 $r = new Router();
-$r->map("", 
-		array("controller"=>"serverinfo", "action"=>"hello"));
+$r->map("",
+	array("controller" => "serverinfo", "action" => "hello"));
 
-$r->map("root.xml", 
-		array("controller"=>"TileMapService", "action"=>"root"));
+$r->map("root.xml",
+	array("controller" => "TileMapService", "action" => "root"));
 
-$r->map("1.0.0", 
-		array("controller"=>"TileMapService", "action"=>"service"));
+$r->map("1.0.0",
+	array("controller" => "TileMapService", "action" => "service"));
 
-$r->map("1.0.0/:layer", 
-		array("controller"=>"TileMapService", "action"=>"resource"), array("layer"=>$_identifier));
+$r->map("1.0.0/:layer",
+	array("controller" => "TileMapService", "action" => "resource"), array("layer" => $_identifier));
 
 $r->map("1.0.0/:layer/:z/:x/:y:is_retina.:ext",
-		array("controller"=>"maptile", "action"=>"serveTmsTile"), 
-		array("layer"=>$_identifier, "x"=>$_number, "y"=>$_number, "z"=>$_number,
-		      "is_retina"=>$_retina, "ext"=>"(png|jpg|jpeg|json)"));
+	array("controller" => "maptile", "action" => "serveTmsTile"),
+	array("layer"     => $_identifier, "x" => $_number, "y" => $_number, "z" => $_number,
+	      "is_retina" => $_retina, "ext" => "(png|jpg|jpeg|json)"));
 
 $r->map(":layer/:z/:x/:y:is_retina.:ext",
-		array("controller"=>"maptile", "action"=>"serveTile"), 
-		array("layer"=>$_identifier, "x"=>$_number, "y"=>$_number, "z"=>$_number,
-		      "is_retina"=>$_retina, "ext"=>"(png|jpg|jpeg|json)"));
+	array("controller" => "maptile", "action" => "serveTile"),
+	array("layer"     => $_identifier, "x" => $_number, "y" => $_number, "z" => $_number,
+	      "is_retina" => $_retina, "ext" => "(png|jpg|jpeg|json)"));
 
 $r->map(":layer/:z/:x/:y.:ext\\?:argument=:callback",
-		array("controller"=>"maptile", "action"=>"serveTile"), 
-		array("layer"=>$_identifier, "x"=>$_number, "y"=>$_number, "z"=>$_number, 
-			  "ext"=>"(json|jsonp)", "argument"=>$_identifier, "callback"=>$_identifier));
+	array("controller" => "maptile", "action" => "serveTile"),
+	array("layer" => $_identifier, "x" => $_number, "y" => $_number, "z" => $_number,
+	      "ext"   => "(json|jsonp)", "argument" => $_identifier, "callback" => $_identifier));
 
 $r->map(":layer/:z/:x/:y:is_retina.grid.:ext",
-		array("controller"=>"maptile", "action"=>"serveTile"), 
-		array("layer"=>$_identifier, "x"=>$_number, "y"=>$_number, "z"=>$_number,
-		      "is_retina"=>$_retina, "ext"=>"(json|jsonp)"));
+	array("controller" => "maptile", "action" => "serveTile"),
+	array("layer"     => $_identifier, "x" => $_number, "y" => $_number, "z" => $_number,
+	      "is_retina" => $_retina, "ext" => "(json|jsonp)"));
 
 $r->map(":layer/:z/:x/:y:is_retina.grid.:ext\\?:argument=:callback",
-		array("controller"=>"maptile", "action"=>"serveTile"), 
-		array("layer"=>$_identifier, "x"=>$_number, "y"=>$_number, "z"=>$_number,
-		      "is_retina"=>$_retina, "ext"=>"(json|jsonp)",
-		      "argument"=>$_identifier, "callback"=>$_identifier));
+	array("controller" => "maptile", "action" => "serveTile"),
+	array("layer"     => $_identifier, "x" => $_number, "y" => $_number, "z" => $_number,
+	      "is_retina" => $_retina, "ext" => "(json|jsonp)",
+	      "argument"  => $_identifier, "callback" => $_identifier));
 
-$r->map(":layer.tilejson", 
-		array("controller"=>"maptile", "action"=>"tilejson"), array("layer"=>$_identifier));
+$r->map(":layer.tilejson",
+	array("controller" => "maptile", "action" => "tilejson"), array("layer" => $_identifier));
 
 $r->map(":layer.tilejsonp\\?:argument=:callback",
-		array("controller"=>"maptile", "action"=>"tilejson"), 
-		array("layer"=>$_identifier, "argument"=>$_identifier, "callback"=>$_identifier));
+	array("controller" => "maptile", "action" => "tilejson"),
+	array("layer" => $_identifier, "argument" => $_identifier, "callback" => $_identifier));
 
 $r->run();
 
 
-
 class BaseClass {
 	protected $layer;
-	protected $is_retina = false;
+	protected $is_retina = FALSE;
 	protected $db;
 
 	public function __construct() {
@@ -92,13 +91,13 @@ class BaseClass {
 			}
 		}
 
-		return false;
+		return FALSE;
 	}
 
 	protected function openDB() {
 		$filename = $this->getMBTilesName();
 
-		if ($filename !== false) {
+		if ($filename !== FALSE) {
 			$this->db = new PDO('sqlite:' . $filename, '', '');
 		}
 		if (!isset($this->db)) {
@@ -108,19 +107,19 @@ class BaseClass {
 
 	protected function closeDB() {
 		// close the database
-		$this->db = null;
+		$this->db = NULL;
 	}
 
 	protected function error($nr, $message) {
 		$http_codes = array(
-			404=>'Not Found',
-			500=>'Internal Server Error',
+			404 => 'Not Found',
+			500 => 'Internal Server Error',
 			// we don't need the rest anyway ;-)
 		);
 
 		header($_SERVER['SERVER_PROTOCOL'] . " $nr {$http_codes[$nr]}");
 		echo $message;
-		exit ;
+		exit;
 	}
 
 }
@@ -138,7 +137,7 @@ class ServerInfoController extends BaseClass {
 		echo "<br /><br />Try these!";
 		echo "<ul>";
 		foreach ($r->routes as $route) {
-			if (strlen($route->url) > 0 && strpos($route->url, ":layer") === false) {
+			if (strlen($route->url) > 0 && strpos($route->url, ":layer") === FALSE) {
 				$url = $route->url;
 				echo "<li><a href='$url'>$url</a></li>";
 			}
@@ -146,7 +145,7 @@ class ServerInfoController extends BaseClass {
 
 		$layers = glob("*.mbtiles");
 		foreach ($layers as $l) {
-			$l = str_replace(".mbtiles", "", $l);
+			$l    = str_replace(".mbtiles", "", $l);
 			$urls = array("$l/2/1/1.png", "$l.tilejson", "$l/2/1/1.json");
 			foreach ($urls as $u) {
 				echo "<li><a href='$u'>$u</a></li>";
@@ -169,20 +168,20 @@ class MapTileController extends BaseClass {
 	protected $callback;
 
 	public function __construct() {
-		$this->is_tms = false;
+		$this->is_tms = FALSE;
 	}
 
 	protected function set($layer, $x, $y, $z, $ext, $callback, $is_retina) {
-		$this->layer = $layer;
-		$this->x = $x;
-		$this->y = $y;
-		$this->z = $z;
-		$this->ext = $ext;
-		$this->callback = $callback;
-		$this->is_retina = is_bool($is_retina)?$is_retina:strtolower(trim($is_retina))=="@2x";
+		$this->layer     = $layer;
+		$this->x         = $x;
+		$this->y         = $y;
+		$this->z         = $z;
+		$this->ext       = $ext;
+		$this->callback  = $callback;
+		$this->is_retina = is_bool($is_retina) ? $is_retina : strtolower(trim($is_retina)) == "@2x";
 	}
 
-	public function serveTile($layer, $x, $y, $z, $ext, $callback, $is_retina=FALSE) {
+	public function serveTile($layer, $x, $y, $z, $ext, $callback, $is_retina = FALSE) {
 		$this->set($layer, $x, $y, $z, $ext, $callback, $is_retina);
 
 		if (!$this->is_tms) {
@@ -208,7 +207,7 @@ class MapTileController extends BaseClass {
 	}
 
 	public function serveTmsTile($tileset, $x, $y, $z, $ext, $callback, $is_retina) {
-		$this->is_tms = true;
+		$this->is_tms = TRUE;
 
 		$this->serveTile($tileset . "-tms", $x, $y, $z, $ext, $callback, $is_retina);
 	}
@@ -234,7 +233,7 @@ class MapTileController extends BaseClass {
 		$etag = $this->etag("jsonp");
 		$this->checkCache($etag);
 
-		$json = $this->getUTFgrid();
+		$json   = $this->getUTFgrid();
 		$output = $this->callback . "($json)";
 
 		// disable ZLIB output compression
@@ -259,13 +258,13 @@ class MapTileController extends BaseClass {
 		}
 	}
 
-	protected function cachingHeaders($etag=null) {
-		$day = 60*60*24;
+	protected function cachingHeaders($etag = NULL) {
+		$day     = 60 * 60 * 24;
 		$expires = 1 * $day;
 
 		// For an explanation on how the expires header and the etag header work together,
 		// please see http://stackoverflow.com/a/500103/426224
-		header("Expires: " . gmdate('D, d M Y H:i:s \G\M\T', time()+$expires));
+		header("Expires: " . gmdate('D, d M Y H:i:s \G\M\T', time() + $expires));
 		header("Pragma: cache");
 		header("Cache-Control: max-age=$expires");
 		if (is_string($etag)) {
@@ -286,13 +285,13 @@ class MapTileController extends BaseClass {
 			$this->openDB();
 
 			$result = $this->db->query('select tile_data as t from tiles where zoom_level=' . $this->z . ' and tile_column=' . $this->x . ' and tile_row=' . $this->y);
-			$data = $result->fetchColumn();
+			$data   = $result->fetchColumn();
 
 			if (!isset($data) || $data === FALSE) {
 
 				// did not find a tile - return an empty (transparent) tile
 				$png = imagecreatetruecolor(256, 256);
-				imagesavealpha($png, true);
+				imagesavealpha($png, TRUE);
 				$trans_colour = imagecolorallocatealpha($png, 0, 0, 0, 127);
 				imagefill($png, 0, 0, $trans_colour);
 				header('Content-type: image/png');
@@ -303,9 +302,9 @@ class MapTileController extends BaseClass {
 
 				// Hooray, found a tile!
 				// - figure out which format (jpeg or png) it is in
-				$result = $this->db->query('select value from metadata where name="format"');
+				$result     = $this->db->query('select value from metadata where name="format"');
 				$resultdata = $result->fetchColumn();
-				$format = isset($resultdata) && $resultdata !== FALSE ? $resultdata : 'png';
+				$format     = isset($resultdata) && $resultdata !== FALSE ? $resultdata : 'png';
 				if ($format == 'jpg') {
 					$format = 'jpeg';
 				}
@@ -319,8 +318,7 @@ class MapTileController extends BaseClass {
 
 			// done
 			$this->closeDB();
-		}
-		catch( PDOException $e ) {
+		} catch (PDOException $e) {
 			$this->closeDB();
 			$this->error(500, 'Error querying the database: ' . $e->getMessage());
 		}
@@ -330,10 +328,10 @@ class MapTileController extends BaseClass {
 		$this->openDB();
 
 		try {
-			$flip = true;
+			$flip = TRUE;
 			if ($this->is_tms) {
 				$this->tileset = substr($this->tileset, 0, strlen($this->tileset) - 4);
-				$flip = false;
+				$flip          = FALSE;
 			}
 
 			$result = $this->db->query('select grid as g from grids where zoom_level=' . $this->z . ' and tile_column=' . $this->x . ' and tile_row=' . $this->y);
@@ -345,12 +343,12 @@ class MapTileController extends BaseClass {
 			} else {
 				// get the gzipped json from the database
 				$grid = gzuncompress($data);
-				
+
 				// manually add the data for the interactivity layer by means of string manipulation
 				// to prevent a bunch of costly calls to json_encode & json_decode
 				//
 				// first, strip off the last '}' character
-				$grid = substr(trim($grid),0,-1);
+				$grid = substr(trim($grid), 0, -1);
 				// then, add a new key labelled 'data'
 				$grid .= ',"data":{';
 
@@ -361,13 +359,12 @@ class MapTileController extends BaseClass {
 				}
 
 				// finish up
-				$grid = rtrim($grid,',') . "}}";
+				$grid = rtrim($grid, ',') . "}}";
 
 				// done
 				return $grid;
 			}
-		}
-		catch( PDOException $e ) {
+		} catch (PDOException $e) {
 			$this->closeDB();
 			$this->error(500, 'Error querying the database: ' . $e->getMessage());
 		}
@@ -377,13 +374,13 @@ class MapTileController extends BaseClass {
 		$this->layer = $layer;
 		$this->openDB();
 		try {
-			$tilejson = array();
+			$tilejson             = array();
 			$tilejson['tilejson'] = "2.0.0";
-			$tilejson['scheme'] = "xyz";
+			$tilejson['scheme']   = "xyz";
 
 			$result = $this->db->query('select name, value from metadata');
 			while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
-				$key = trim($row['name']);
+				$key   = trim($row['name']);
 				$value = $row['value'];
 				if (in_array($key, array('maxzoom', 'minzoom'))) {
 					$value = intval($value);
@@ -398,7 +395,7 @@ class MapTileController extends BaseClass {
 			}
 
 			// find out the absolute URL to this script
-			$protocol = empty($_SERVER["HTTPS"])?"http":"https";
+			$protocol   = empty($_SERVER["HTTPS"]) ? "http" : "https";
 			$server_url = $protocol . "://" . $_SERVER["HTTP_HOST"] . dirname($_SERVER["REQUEST_URI"]);
 
 			$tilejson['tiles'] = array(
@@ -413,7 +410,7 @@ class MapTileController extends BaseClass {
 			// 'Fixes' https://github.com/infostreams/mbtiles-php/issues/12
 			$tilejson['webpage'] = $server_url;
 
-			if ($callback !== null) {
+			if ($callback !== NULL) {
 				$json = "$callback(" . json_encode($tilejson) . ")";
 			} else {
 				$json = json_encode($tilejson);
@@ -425,8 +422,7 @@ class MapTileController extends BaseClass {
 			$this->cachingHeaders();
 
 			echo $json;
-		}
-		catch( PDOException $e ) {
+		} catch (PDOException $e) {
 			$this->closeDB();
 			$this->error(500, 'Error querying the database: ' . $e->getMessage());
 		}
@@ -438,14 +434,14 @@ class MapTileController extends BaseClass {
  * Implements a TileMapService that returns XML information on the provided
  * services.
  *
- * @see http://wiki.osgeo.org/wiki/Tile_Map_Service_Specification
+ * @see    http://wiki.osgeo.org/wiki/Tile_Map_Service_Specification
  * @author zverik (https://github.com/Zverik)
  * @author E. Akerboom (github@infostreams.net)
  */
 class TileMapServiceController extends BaseClass {
 
 	public function __construct() {
-		$this->server_name = "PHP TileMap server";
+		$this->server_name    = "PHP TileMap server";
 		$this->server_version = "1.0.0";
 	}
 
@@ -473,16 +469,15 @@ EOF;
 		echo "\n\t<TileMaps>";
 
 		if ($handle = opendir('.')) {
-			while (($file = readdir($handle)) !== false) {
+			while (($file = readdir($handle)) !== FALSE) {
 				if (preg_match('/^[\w\d_-]+\.mbtiles$/', $file) && is_file($file)) {
 					try {
-						$db = new PDO('sqlite:' . $file);
-						$params = $this->readparams($db);
-						$name = htmlspecialchars($params['name']);
+						$db         = new PDO('sqlite:' . $file);
+						$params     = $this->readparams($db);
+						$name       = htmlspecialchars($params['name']);
 						$identifier = str_replace('.mbtiles', '', $file);
 						echo "\n\t\t<TileMap title=\"$name\" srs=\"OSGEO:41001\" profile=\"global-mercator\" href=\"${base}1.0.0/$identifier\" />";
-					}
-					catch( PDOException $e ) {
+					} catch (PDOException $e) {
 						// nothing
 					}
 				}
@@ -499,9 +494,9 @@ EOF;
 			$this->openDB();
 			$params = $this->readparams($this->db);
 
-			$title = htmlspecialchars($params['name']);
+			$title       = htmlspecialchars($params['name']);
 			$description = htmlspecialchars($params['description']);
-			$format = $params['format'];
+			$format      = $params['format'];
 
 			switch (strtolower($format)) {
 				case "jpg" :
@@ -511,7 +506,7 @@ EOF;
 
 				default :
 				case "png" :
-					$format = "png";
+					$format   = "png";
 					$mimetype = "image/png";
 					break;
 			}
@@ -530,7 +525,7 @@ EOF;
 	<TileSets profile="global-mercator">
 EOF;
 			foreach ($this->readzooms($this->db) as $zoom) {
-				$href = $base . "1.0.0/" . $this->layer . "/" . $zoom;
+				$href     = $base . "1.0.0/" . $this->layer . "/" . $zoom;
 				$units_pp = 78271.516 / pow(2, $zoom);
 
 				echo "<TileSet href=\"$href\" units-per-pixel=\"$units_pp\" order=\"$zoom\" />";
@@ -540,8 +535,7 @@ EOF;
 	</TileSets>
 </TileMap>
 EOF;
-		}
-		catch( PDOException $e ) {
+		} catch (PDOException $e) {
 			$this->error(404, "Incorrect tileset name: " . $this->layer);
 		}
 	}
@@ -552,11 +546,12 @@ EOF;
 		while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
 			$params[$row['name']] = $row['value'];
 		}
+
 		return $params;
 	}
 
 	function readzooms($db) {
-		$params = $this->readparams($db);
+		$params  = $this->readparams($db);
 		$minzoom = $params['minzoom'];
 		$maxzoom = $params['maxzoom'];
 
@@ -564,12 +559,11 @@ EOF;
 	}
 
 	function getBaseUrl() {
-		$protocol = empty($_SERVER["HTTPS"])?"http":"https";
+		$protocol = empty($_SERVER["HTTPS"]) ? "http" : "https";
+
 		return $protocol . '://' . $_SERVER['HTTP_HOST'] . preg_replace('/\/(1.0.0\/)?[^\/]*$/', '/', $_SERVER['REQUEST_URI']);
 	}
 }
-
-
 
 
 /**
@@ -580,15 +574,15 @@ EOF;
  *
  * 1. Can now be deployed in a subdirectory, not just the domain root
  * 2. Will now call the indicated controller & action. Named arguments are
- *	converted to similarly method arguments, i.e. if you specify :id in the
- *	URL mapping, the value of that parameter will be provided to the method's
- *	'$id' parameter, if present.
+ *    converted to similarly method arguments, i.e. if you specify :id in the
+ *    URL mapping, the value of that parameter will be provided to the method's
+ *    '$id' parameter, if present.
  * 3. Will now allow URL mappings that contain a '?' - useful for mapping JSONP urls
  * 4. Should now correctly deal with spaces (%20) and other stuff in the URL
  *
  * @version 2.0
- * @author Dan Sosedoff <http://twitter.com/dan_sosedoff>
- * @author E. Akerboom <github@infostreams.net>
+ * @author  Dan Sosedoff <http://twitter.com/dan_sosedoff>
+ * @author  E. Akerboom <github@infostreams.net>
  */
 define('ROUTER_DEFAULT_CONTROLLER', 'home');
 define('ROUTER_DEFAULT_ACTION', 'index');
@@ -599,13 +593,13 @@ class Router extends BaseClass {
 	public $controller, $controller_name;
 	public $action, $id;
 	public $params;
-	public $route_found = false;
+	public $route_found = FALSE;
 
 	public function __construct() {
 		$request = $this->get_request();
 
 		$this->request_uri = $request;
-		$this->routes = array();
+		$this->routes      = array();
 	}
 
 	public function get_request() {
@@ -619,7 +613,7 @@ class Router extends BaseClass {
 		// (i.e. if this script is in '/sites/something/router.php', and we are
 		// requesting /sites/something/here/is/my/path.png, then this function will 
 		// return 'here/is/my/path.png')
-		if (strpos($here, $document_root) !== false) {
+		if (strpos($here, $document_root) !== FALSE) {
 			$relative_path = "/" . str_replace($document_root, "", $here);
 
 			# fix for https://github.com/infostreams/mbtiles-php/issues/4
@@ -649,11 +643,13 @@ class Router extends BaseClass {
 	}
 
 	private function set_route($route) {
-		$this->route_found = true;
-		$params = $route->params;
-		$this->controller = $params['controller']; unset($params['controller']);
-		$this->action = $params['action']; unset($params['action']);
-		if (isset($params['id'])) { 
+		$this->route_found = TRUE;
+		$params            = $route->params;
+		$this->controller  = $params['controller'];
+		unset($params['controller']);
+		$this->action = $params['action'];
+		unset($params['action']);
+		if (isset($params['id'])) {
 			$this->id = $params['id'];
 		}
 		$this->params = array_merge($params, $_GET);
@@ -665,7 +661,7 @@ class Router extends BaseClass {
 			$this->action = ROUTER_DEFAULT_ACTION;
 		}
 		if (empty($this->id)) {
-			$this->id = null;
+			$this->id = NULL;
 		}
 
 		// determine controller name
@@ -696,15 +692,15 @@ class Router extends BaseClass {
 					// iterate this method's parameters and compare them with the parameter names
 					// we defined in the route. Then, reassemble the values from the URL and put
 					// them in the same order as method's argument list.
-					$m = new ReflectionMethod($controller, $this->action);
+					$m      = new ReflectionMethod($controller, $this->action);
 					$params = $m->getParameters();
-					$args = array();
-					foreach ($params as $i=>$p) {
+					$args   = array();
+					foreach ($params as $i => $p) {
 						if (isset($this->params[$p->name])) {
 							$args[$i] = urldecode($this->params[$p->name]);
 						} else {
 							// we couldn't find this parameter in the URL! Set it to 'null' to indicate this.
-							$args[$i] = null;
+							$args[$i] = NULL;
 						}
 					}
 
@@ -724,17 +720,17 @@ class Router extends BaseClass {
 }
 
 class Route {
-	public $is_matched = false;
+	public $is_matched = FALSE;
 	public $params;
 	public $url;
 	private $conditions;
 
 	function __construct($url, $request_uri, $target, $conditions) {
-		$this->url = $url;
-		$this->params = array();
+		$this->url        = $url;
+		$this->params     = array();
 		$this->conditions = $conditions;
-		$p_names = array();
-		$p_values = array();
+		$p_names          = array();
+		$p_values         = array();
 
 		// extract pattern names (catches :controller, :action, :id, etc)
 		preg_match_all('@:([\w]+)@', $url, $p_names, PREG_PATTERN_ORDER);
@@ -756,13 +752,13 @@ class Route {
 			if (preg_match('@^' . $url_regex . '$@', $request, $p_values)) {
 				array_shift($p_values);
 				foreach ($p_names as $value) {
-					$key = substr($value, 1);
+					$key                = substr($value, 1);
 					$this->params[$key] = urldecode($p_values[$key]);
 				}
-				foreach ($target as $key=>$value) {
+				foreach ($target as $key => $value) {
 					$this->params[$key] = $value;
 				}
-				$this->is_matched = true;
+				$this->is_matched = TRUE;
 				break;
 			}
 		}
