@@ -98,6 +98,10 @@ class BaseClass {
 		$filename = $this->getMBTilesName();
 
 		if ($filename !== FALSE) {
+			if (!extension_loaded('pdo_sqlite')) {
+				$this->error(500, "PDO SQLite extension is not installed");
+			}
+
 			$this->db = new PDO('sqlite:' . $filename, '', '');
 		}
 		if (!isset($this->db)) {
@@ -288,6 +292,12 @@ class MapTileController extends BaseClass {
 			$data   = $result->fetchColumn();
 
 			if (!isset($data) || $data === FALSE) {
+				if (!extension_loaded('gd')) {
+					$this->error(500, "You need to install the GD image library.");
+				}
+				if (!function_exists('imagepng')) {
+					$this->error(500, "Your GD image library has no support for PNG images. Please correct and try again.");
+				}
 
 				// did not find a tile - return an empty (transparent) tile
 				$png = imagecreatetruecolor(256, 256);
