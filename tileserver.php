@@ -604,7 +604,8 @@ class Router extends BaseClass {
 
 	public function get_request() {
 		// find out the absolute path to this script
-		$here = str_replace("\\", "/", realpath(rtrim(dirname(__FILE__), '/')) . "/");
+		// - adjusted as per https://github.com/infostreams/mbtiles-php/issues/17
+		$here = str_replace("\\", "/", rtrim(dirname($_SERVER["SCRIPT_FILENAME"]), '/') . "/");
 
 		// find out the absolute path to the document root
 		$document_root = str_replace("\\", "/", realpath($_SERVER["DOCUMENT_ROOT"]) . "/");
