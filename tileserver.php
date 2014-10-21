@@ -3,14 +3,10 @@
  * A PHP TileMap Server
  *
  * Serves image tiles, UTFgrid tiles and TileJson definitions
- * from MBTiles files (as used by TileMill). (Partly) implements
- * the Tile Map Services Specification.
- * 
- * Originally based on https://github.com/Zverik/mbtiles-php,
- * but refactored and extended.
+ * from MBTiles files (as used by TileMill).
  *
  * @author  E. Akerboom (github@infostreams.net)
- * @version 1.2
+ * @version 1.3
  * @license LGPL
  */
 header('Access-Control-Allow-Origin: *');
@@ -156,8 +152,6 @@ class ServerInfoController extends BaseClass {
 			}
 		}
 		echo "</ul>";
-
-		echo "<br/><br/>PS: non-exhaustive list, see source for details";
 	}
 
 }
